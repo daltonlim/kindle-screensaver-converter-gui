@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHBoxLayout, QLabel, QSpinBox, QPushButton, QFileDialog, QScrollArea, 
-    QFrame, QProgressBar, QMessageBox, QGridLayout)
+    QFrame, QProgressBar, QMessageBox, QGridLayout, QComboBox)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QPixmap, QImage, QFont, QIcon
 from PIL import Image, ImageEnhance
@@ -234,8 +234,27 @@ class KindleConverterGUI(QMainWindow):
         self.convert_btn.setEnabled(True)
         self.select_folder_btn.setEnabled(True)
         
-        QMessageBox.information(self, "Success", 
-            "Images have been converted successfully!\nCheck the 'converted_screensavers' folder.")
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Success")
+        msg_box.setText("Images have been converted successfully!")
+        msg_box.setInformativeText("Check the 'converted_screensavers' folder.")
+        
+        open_folder_btn = QPushButton("Open Folder")
+        open_folder_btn.clicked.connect(lambda: self.open_output_folder())
+        
+        msg_box.addButton(QMessageBox.StandardButton.Ok)
+        msg_box.addButton(open_folder_btn, QMessageBox.ButtonRole.ActionRole)
+        
+        msg_box.exec()
+    
+    def open_output_folder(self):
+        output_folder = os.path.join(os.getcwd(), "converted_screensavers")
+        if sys.platform == 'darwin':  # macOS
+            os.system(f'open "{output_folder}"')
+        elif sys.platform == 'win32':  # Windows
+            os.system(f'explorer "{output_folder}"')
+        else:  # Linux
+            os.system(f'xdg-open "{output_folder}"')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
