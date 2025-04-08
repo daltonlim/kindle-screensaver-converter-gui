@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHBoxLayout, QLabel, QSpinBox, QPushButton, QFileDialog, QScrollArea, 
-    QFrame, QProgressBar, QMessageBox, QGridLayout)
+    QFrame, QProgressBar, QMessageBox, QGridLayout, QComboBox)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QPixmap, QImage, QFont, QIcon
 from PIL import Image, ImageEnhance
@@ -111,6 +111,16 @@ class KindleConverterGUI(QMainWindow):
         icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'icon.ico')
         self.setWindowIcon(QIcon(icon_path))
         self.input_folder = "PUT YOUR IMAGES HERE"
+        self.kindle_presets = {
+            "Custom": {},
+            "Kindle Paperwhite 1-3": {"width": 758, "height": 1024, "dpi_x": 212, "dpi_y": 212, "bit_depth": 8},
+            "Kindle Paperwhite 4-5": {"width": 1072, "height": 1448, "dpi_x": 300, "dpi_y": 300, "bit_depth": 8},
+            "Kindle Paperwhite 11": {"width": 1236, "height": 1648, "dpi_x": 300, "dpi_y": 300, "bit_depth": 8},
+            "Kindle Paperwhite 12": {"width": 1264, "height": 1680, "dpi_x": 300, "dpi_y": 300, "bit_depth": 8},
+            "Kindle Basic (2019-2022)": {"width": 600, "height": 800, "dpi_x": 167, "dpi_y": 167, "bit_depth": 8},
+            "Kindle Oasis 2-3": {"width": 1264, "height": 1680, "dpi_x": 300, "dpi_y": 300, "bit_depth": 8},
+            "Kindle Scribe": {"width": 1860, "height": 2480, "dpi_x": 300, "dpi_y": 300, "bit_depth": 8}
+        }
         self.initUI()
 
     def initUI(self):
@@ -133,6 +143,13 @@ class KindleConverterGUI(QMainWindow):
         params_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
         params_layout = QGridLayout(params_frame)
 
+        # Kindle model dropdown
+        params_layout.addWidget(QLabel("Kindle Model:"), 0, 0)
+        self.kindle_model_combo = QComboBox()
+        self.kindle_model_combo.addItems(self.kindle_presets.keys())
+        self.kindle_model_combo.currentTextChanged.connect(self.apply_kindle_preset)
+        params_layout.addWidget(self.kindle_model_combo, 0, 1)
+
         # Parameter input fields
         self.params = {}
         param_configs = {
@@ -144,12 +161,12 @@ class KindleConverterGUI(QMainWindow):
         }
 
         for i, (key, (label, default, min_val, max_val)) in enumerate(param_configs.items()):
-            params_layout.addWidget(QLabel(label), i, 0)
+            params_layout.addWidget(QLabel(label), i+1, 0)  # +1 because of the dropdown
             spinbox = QSpinBox()
             spinbox.setRange(min_val, max_val)
             spinbox.setValue(default)
             self.params[key] = spinbox
-            params_layout.addWidget(spinbox, i, 1)
+            params_layout.addWidget(spinbox, i+1, 1)
 
         layout.addWidget(params_frame)
 
@@ -212,6 +229,15 @@ class KindleConverterGUI(QMainWindow):
         if folder:
             self.input_folder = folder
             self.load_image_previews()
+
+    def apply_kindle_preset(self, model_name):
+        if model_name == "Custom":
+            return
+            
+        preset = self.kindle_presets[model_name]
+        for key, value in preset.items():
+            if key in self.params:
+                self.params[key].setValue(value)
 
     def start_conversion(self):
         params = {key: spinbox.value() for key, spinbox in self.params.items()}
